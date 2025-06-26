@@ -117,8 +117,10 @@ async def _dl_blender_tools(dir_: Path, is360: bool) -> Tuple[str,str,str,str,bo
             _fetch(settings.url_blender_user_mirror_script,  user_mirror,   text=True),
             _fetch(scene_file_url,            default_scene)
         )
-        return map(str, (scene_script, default_scene,
-                         mirror_script, user_mirror)) | (False,)   # type: ignore
+        return (*map(str, (scene_script,
+                   default_scene,
+                   mirror_script,
+                   user_mirror)), False)
     except Exception as e:
         logger.error("Blender-tool download failed → fallback: %s", e, exc_info=True)
         return ("", "", "", "", True)

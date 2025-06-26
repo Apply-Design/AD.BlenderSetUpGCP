@@ -22,7 +22,7 @@ async def render(data: PostData):
     return {"scene_id": scene_id, "blend": uri, "status": "submitted"}
 
 async def _upload(path, scene_id):
-    client = storage.Client()
+    client = storage.Client(project=settings.project_id)
     bucket = client.bucket(settings.bucket)
     blob   = bucket.blob(f"renders/{scene_id}/{scene_id}.blend")
     blob.upload_from_filename(path)

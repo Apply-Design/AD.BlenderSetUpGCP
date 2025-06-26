@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     url_blender_360_scene_file:         str = "https://applydesign.blob.core.windows.net/blender-function-tools/Blender35/Base360.blend"
     url_blender_mirror_script:          str = "https://applydesign.blob.core.windows.net/blender-function-tools/Blender35/SceneMirrorScript.py"
     url_blender_user_mirror_script:     str = "https://applydesign.blob.core.windows.net/blender-function-tools/Blender35/UserMirrorScript.py"
-    blender_exe_location:               str = "/usr/bin/blender-3.5.0-linux-x64/blender"
+    blender_exe_location:               str = "/usr/local/bin/blender"
 
     class Config:
         env_file = ".env"
