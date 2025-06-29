@@ -43,9 +43,7 @@ cp Furniture_* Light_* Shadow_* scene.blend "$OUT_DIR/"
 # 4) optional webhook
 if [ -n "{webhook or ''}" ]; then
   apt-get -qq update && apt-get -y install --no-install-recommends curl >/dev/null
-  curl -s -X POST -H 'Content-Type: application/json' \
-       -d '{{"scene_id":"{scene_id}","status":"done","gcs_prefix":"{out_uri}"}}' \
-       "{webhook}"
+  curl -X POST -d '{{"workflow_id": "{job_id}"}}' -H "Content-Type: application/json" {settings.pipeline_manager_url}/actions/signal/rendering_process_post_blender
 fi
 """
 
@@ -71,7 +69,7 @@ fi
                             gcs=batch_v1.GCS(remote_path=scene_bucket),
                             mount_path="/mnt/stateful_partition/in",
                         ),
-                        # OUTPUT (same bucket, but we’ll write via renders/<id>/)
+                        # OUTPUT (same bucket, but we'll write via renders/<id>/)
                         batch_v1.Volume(
                             gcs=batch_v1.GCS(remote_path=bucket),
                             mount_path="/mnt/stateful_partition/out",
