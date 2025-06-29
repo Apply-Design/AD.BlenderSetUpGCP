@@ -2,7 +2,9 @@ from google.cloud import batch_v1
 from google.protobuf import duration_pb2
 import uuid, re
 from settings import settings
+import logging
 
+logger = logging.getLogger("batch_submit")
 
 def submit(scene_id: str, blend_uri: str, webhook: str | None):
     """
@@ -100,4 +102,6 @@ fi
         labels={"scene": scene_id},
     )
 
+    logger.info(f"Batch job object created for scene_id=%s, job_id=%s", scene_id, job_id)
     client.create_job(parent=parent, job=job, job_id=job_id)
+    logger.info(f"Batch job submitted for scene_id=%s, job_id=%s", scene_id, job_id)

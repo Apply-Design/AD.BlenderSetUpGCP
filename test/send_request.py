@@ -6,7 +6,7 @@ Usage:
 """
 import sys, json, pprint, requests, pathlib
 
-endpoint = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8080/render"
+endpoint = sys.argv[1] if len(sys.argv) > 1 else "https://blender-api-652963436516.us-central1.run.app/render"
 payload  = json.loads(pathlib.Path(__file__).with_name("payload.json").read_text())
 
 print(f"POST → {endpoint}")

@@ -22,6 +22,7 @@ async def build_scene(data: PostData, scene_id: str) -> Path:
     Faithful port of RunBlenderScripts.Run() up to—but not including—the
     cloud-render submission.  Returns the prepared *.blend path.
     """
+    logger.info(f"Starting build_scene for scene_id=%s", scene_id)
     # 1) working root mirrors C# →  /tmp/<scene_id>/
     root = Path(tempfile.gettempdir()) / str(scene_id)
     _mkdirs(root)
@@ -34,6 +35,7 @@ async def build_scene(data: PostData, scene_id: str) -> Path:
     scene_image = await _dl_scene_image(root / TEMP_SCENE_DIR,
                                         data.space_image_uri, data.space_image_id)
     model_paths = await _dl_all_models(root / TEMP_MODELS_DIR, data.scene_objects)
+    logger.info(f"Downloaded scene assets for scene_id=%s", scene_id)
 
     (scene_script, default_scene, mirror_script, user_mirror_script,
      tools_error) = await _dl_blender_tools(root / TEMP_SCENE_DIR, data.is360)
@@ -64,6 +66,7 @@ async def build_scene(data: PostData, scene_id: str) -> Path:
     if has_object_mirrors and not data.mirror_in_scene and not data.is360:
         _run(f"{blend_out} -b -P {user_mirror_script}")
 
+    logger.info(f"Finished build_scene for scene_id=%s, blend_out=%s", scene_id, blend_out)
     return blend_out
 
 # ─────────────────────────── helpers ────────────────────────────
