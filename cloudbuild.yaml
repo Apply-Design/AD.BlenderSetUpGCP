@@ -1,0 +1,44 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '--tag', 'gcr.io/$PROJECT_ID/blender-api:$COMMIT_SHA',
+      '--tag', 'gcr.io/$PROJECT_ID/blender-api:latest',
+      '--cache-from', 'gcr.io/$PROJECT_ID/blender-api:latest',
+      '.'
+    ]
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/blender-api:$COMMIT_SHA']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/blender-api:latest']
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: [
+      'run', 'deploy', 'blender-api',
+      '--image', 'gcr.io/$PROJECT_ID/blender-api:$COMMIT_SHA',
+      '--region', 'us-central1',
+      '--platform', 'managed',
+      '--cpu', '8',
+      '--memory', '16Gi',
+      '--concurrency', '1',
+      '--timeout', '900',
+      '--max-instances', '10',
+      '--min-instances', '0',
+      '--allow-unauthenticated',
+      '--set-env-vars', 'PROJECT_ID=$PROJECT_ID,REGION=us-central1',
+      '--port', '8080'
+    ]
+
+images:
+  - 'gcr.io/$PROJECT_ID/blender-api:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/blender-api:latest'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: '100'
+  logStreamingOption: 'STREAM_ON' 

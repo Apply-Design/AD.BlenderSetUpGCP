@@ -8,6 +8,11 @@ from settings import settings
 
 app = FastAPI()
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Cloud Run"""
+    return {"status": "healthy", "service": "blender-api"}
+
 @app.post("/render")
 async def render(data: PostData):
     scene_id = data.scene_id if hasattr(data, "scene_id") else uuid4().hex[:8]  # optional
