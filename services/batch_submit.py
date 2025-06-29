@@ -6,10 +6,10 @@ import logging
 
 logger = logging.getLogger("batch_submit")
 
-def submit(scene_id: str, blend_uri: str, webhook: str | None):
+def submit(render_job_id: str, blend_uri: str, webhook: str | None):
     """
     Launch a render job that reads the .blend we uploaded to
-    gs://<bucket>/renders/<scene_id>/<scene_id>.blend
+    gs://<bucket>/renders/<render_job_id>/<render_job_id>.blend
     """
     project_id, region, bucket = (
         settings.project_id,
@@ -17,9 +17,9 @@ def submit(scene_id: str, blend_uri: str, webhook: str | None):
         settings.bucket,
     )
 
-    job_id = f"render-{scene_id}-{uuid.uuid4().hex[:6]}"
+    job_id = f"render-{render_job_id}-{uuid.uuid4().hex[:6]}"
     parent = f"projects/{project_id}/locations/{region}"
-    out_uri = f"gs://{bucket}/renders/{scene_id}/"
+    out_uri = f"gs://{bucket}/renders/{render_job_id}/"
 
     # input bucket name only (Batch needs just the bucket, not the object path)
     m = re.match(r"^gs://([^/]+)/.+$", blend_uri)
@@ -30,15 +30,15 @@ def submit(scene_id: str, blend_uri: str, webhook: str | None):
 set -euo pipefail
 
 # 1) copy the uploaded blend (renders/<id>/<id>.blend) to ./scene.blend
-echo "📂  Copying .blend from renders/{scene_id}/{scene_id}.blend"
-cp "/mnt/stateful_partition/in/renders/{scene_id}/{scene_id}.blend" scene.blend
+echo "📂  Copying .blend from renders/{render_job_id}/{render_job_id}.blend"
+cp "/mnt/stateful_partition/in/renders/{render_job_id}/{render_job_id}.blend" scene.blend
 
 # 2) render a single frame (CPU)
 echo "🎬  Rendering frame 1"
 blender -b scene.blend -E CYCLES -f 1
 
 # 3) copy outputs back to out bucket
-OUT_DIR=/mnt/stateful_partition/out/renders/{scene_id}
+OUT_DIR=/mnt/stateful_partition/out/renders/{render_job_id}
 mkdir -p "$OUT_DIR"
 cp Furniture_* Light_* Shadow_* scene.blend "$OUT_DIR/"
 
@@ -99,9 +99,9 @@ fi
             destination=batch_v1.LogsPolicy.Destination.CLOUD_LOGGING,
             logs_path="batch_task_logs",
         ),
-        labels={"scene": scene_id},
+        labels={"render_job": render_job_id},
     )
 
-    logger.info(f"Batch job object created for scene_id=%s, job_id=%s", scene_id, job_id)
+    logger.info(f"Batch job object created for render_job_id=%s, job_id=%s", render_job_id, job_id)
     client.create_job(parent=parent, job=job, job_id=job_id)
-    logger.info(f"Batch job submitted for scene_id=%s, job_id=%s", scene_id, job_id)
+    logger.info(f"Batch job submitted for render_job_id=%s, job_id=%s", render_job_id, job_id)

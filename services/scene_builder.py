@@ -1,5 +1,5 @@
 from __future__ import annotations
-import asyncio, aiohttp, tempfile, subprocess, json, logging
+import asyncio, aiohttp, tempfile, subprocess, json, logging, shutil
 from pathlib import Path
 from typing import List, Tuple
 
@@ -17,25 +17,25 @@ TEMP_CFG_DIR          = "tmp/blenderconfig/"
 LARGE_BLENDER_FILE_MB = 650        # kept for parity (not used here)
 
 # ─────────────────────────── public API ────────────────────────────
-async def build_scene(data: PostData, scene_id: str) -> Path:
+async def build_scene(data: PostData, render_job_id: str) -> Path:
     """
     Faithful port of RunBlenderScripts.Run() up to—but not including—the
     cloud-render submission.  Returns the prepared *.blend path.
     """
-    logger.info(f"Starting build_scene for scene_id=%s", scene_id)
-    # 1) working root mirrors C# →  /tmp/<scene_id>/
-    root = Path(tempfile.gettempdir()) / str(scene_id)
+    logger.info(f"Starting build_scene for render_job_id=%s", render_job_id)
+    # 1) working root mirrors C# →  /tmp/<render_job_id>/
+    root = Path(tempfile.gettempdir()) / str(render_job_id)
     _mkdirs(root)
 
-    blend_out = root / TEMP_BFILE_TEMPLATE.format(scene_id)
+    blend_out = root / TEMP_BFILE_TEMPLATE.format(render_job_id)
 
     # 2) core downloads ---------------------------------------------------------
     scene_gltf  = await _dl_scene_gltf(root / TEMP_SCENE_DIR,
-                                       data.scene_gltf_uri, data.space_image_id)
+                                       data.scene_gltf_uri, render_job_id)
     scene_image = await _dl_scene_image(root / TEMP_SCENE_DIR,
-                                        data.space_image_uri, data.space_image_id)
+                                        data.space_image_uri, render_job_id)
     model_paths = await _dl_all_models(root / TEMP_MODELS_DIR, data.scene_objects)
-    logger.info(f"Downloaded scene assets for scene_id=%s", scene_id)
+    logger.info(f"Downloaded scene assets for render_job_id=%s", render_job_id)
 
     (scene_script, default_scene, mirror_script, user_mirror_script,
      tools_error) = await _dl_blender_tools(root / TEMP_SCENE_DIR, data.is360)
@@ -66,8 +66,24 @@ async def build_scene(data: PostData, scene_id: str) -> Path:
     if has_object_mirrors and not data.mirror_in_scene and not data.is360:
         _run(f"{blend_out} -b -P {user_mirror_script}")
 
-    logger.info(f"Finished build_scene for scene_id=%s, blend_out=%s", scene_id, blend_out)
+    logger.info(f"Finished build_scene for render_job_id=%s, blend_out=%s", render_job_id, blend_out)
     return blend_out
+
+def cleanup_temp_files(render_job_id: str):
+    """
+    Clean up all temporary files and directories for a given render job.
+    This should be called after the job is submitted to batch.
+    """
+    try:
+        root = Path(tempfile.gettempdir()) / str(render_job_id)
+        if root.exists():
+            shutil.rmtree(root)
+            logger.info(f"Cleaned up temporary directory for render_job_id=%s: %s", render_job_id, root)
+        else:
+            logger.info(f"No temporary directory found for render_job_id=%s: %s", render_job_id, root)
+    except Exception as e:
+        logger.error(f"Failed to cleanup temp files for render_job_id=%s: %s", render_job_id, e)
+        raise
 
 # ─────────────────────────── helpers ────────────────────────────
 def _mkdirs(root: Path):
@@ -83,13 +99,13 @@ async def _fetch(url: str, dest: Path, text: bool = False):
         with open(dest, mode) as f:
             f.write(data)
 
-async def _dl_scene_gltf(dir_: Path, uri: str, sid: int) -> Path:
-    p = dir_ / f"scene{sid}.gltf"
+async def _dl_scene_gltf(dir_: Path, uri: str, render_job_id: str) -> Path:
+    p = dir_ / f"scene{render_job_id}.gltf"
     await _fetch(uri, p)
     return p
 
-async def _dl_scene_image(dir_: Path, uri: str, sid: int) -> Path:
-    p = dir_ / f"scene{sid}{Path(uri).suffix}"
+async def _dl_scene_image(dir_: Path, uri: str, render_job_id: str) -> Path:
+    p = dir_ / f"scene{render_job_id}{Path(uri).suffix}"
     await _fetch(uri, p)
     return p
 
