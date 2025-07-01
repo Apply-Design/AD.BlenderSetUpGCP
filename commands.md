@@ -24,3 +24,12 @@ docker run -p 8080:8080 \
 ```bash
 python test/send_request.py
 ```
+
+### Build for cloud
+```bash
+gcloud builds submit --tag gcr.io/applydesign/blender-api
+```
+### Deploy to cloud
+```bash
+gcloud run deploy blender-api --image gcr.io/applydesign/blender-api --platform managed --region us-central1 --cpu 8 --memory 16Gi  --concurrency 1 --timeout 900
+```
