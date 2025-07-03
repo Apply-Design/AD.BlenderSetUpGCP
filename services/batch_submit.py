@@ -42,11 +42,9 @@ OUT_DIR=/mnt/stateful_partition/out/renders/{render_job_id}
 mkdir -p "$OUT_DIR"
 cp Furniture_* Light_* Shadow_* scene.blend "$OUT_DIR/"
 
-# 4) optional webhook
-if [ -n "{webhook or ''}" ]; then
-  apt-get -qq update && apt-get -y install --no-install-recommends curl >/dev/null
-  curl -X POST -d '{{"workflow_id": "{job_id}"}}' -H "Content-Type: application/json" {settings.pipeline_manager_url}/actions/signal/rendering_process_post_blender
-fi
+# 4) webhook (required)
+apt-get -qq update && apt-get -y install --no-install-recommends curl >/dev/null
+curl -X POST -d '{{"workflow_id": "{job_id}"}}' -H "Content-Type: application/json" {settings.pipeline_manager_url}/actions/signal/rendering_process_post_blender
 """
 
     # ── Batch API objects ───────────────────────────────────────────────────
