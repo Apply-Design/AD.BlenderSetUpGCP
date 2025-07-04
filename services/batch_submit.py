@@ -17,7 +17,7 @@ def submit(render_job_id: str, blend_uri: str, webhook: str | None):
         settings.bucket,
     )
 
-    job_id = f"render-{render_job_id}-{uuid.uuid4().hex[:6]}"
+    job_id = f"{render_job_id}"
     parent = f"projects/{project_id}/locations/{region}"
     out_uri = f"gs://{bucket}/renders/{render_job_id}/"
 
