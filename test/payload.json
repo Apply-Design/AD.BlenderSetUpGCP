@@ -1,6 +1,6 @@
 {
     "CameraObjectName": "Camera",
-    "Is360": false,
+    "Is360": true,
     "MirrorInScene": false,
     "OutputFormat": "png",
     "Pool": "NvidiaBlenderGPU",
@@ -48,7 +48,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -81,7 +81,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -153,7 +153,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -186,7 +186,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -219,7 +219,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -252,7 +252,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -286,7 +286,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -319,7 +319,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -353,7 +353,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -386,7 +386,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -419,7 +419,7 @@
             "ScaleX": 1,
             "ScaleY": 1,
             "ScaleZ": 1,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,
@@ -452,7 +452,7 @@
             "ScaleX": 1.18,
             "ScaleY": 1.18,
             "ScaleZ": 1.18,
-            "ShowLights": true
+            "ShowLights": false
         },
         {
             "CameraObjectName": null,

@@ -1,7 +1,8 @@
 from __future__ import annotations
-import asyncio, aiohttp, tempfile, subprocess, json, logging, shutil
+import asyncio, aiohttp, tempfile, subprocess, json, logging, shutil, os
 from pathlib import Path
 from typing import List, Tuple
+import shlex, threading, sys
 
 from models.scene import PostData, SceneObjectData
 from settings import settings
@@ -44,27 +45,52 @@ async def build_scene(data: PostData, render_job_id: str) -> Path:
                                   scene_gltf, scene_image,
                                   data, model_paths)
 
+    # Prepare persistent log file outside /tmp so it survives container errors
+    logs_root = Path("/logs")
+    try:
+        logs_root.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        # Fallback to project-relative logs directory if /logs is not writable
+        logs_root = Path.cwd() / "logs"
+        logs_root.mkdir(parents=True, exist_ok=True)
+
+    log_file = logs_root / f"{render_job_id}.log"
+    if log_file.exists():
+        log_file.unlink()      # start fresh for this build
+
     # 3) Blender command pipeline ----------------------------------------------
     blender = Path(settings.blender_exe_location)
     if not blender.exists():
         raise FileNotFoundError(f"Blender not found at {blender}")
 
-    _run(f"/local/scripts/defualt.blend -b -P /local/scripts/ApplyDesignSceneScript.py -- -i {cfg_path}"
-         if tools_error else
-         f"{default_scene} -b -P {scene_script} -- -i {cfg_path}")
+    _run(
+        f"/local/scripts/defualt.blend -b -P /local/scripts/ApplyDesignSceneScript.py -- -i {cfg_path}"
+        if tools_error else
+        f"{default_scene} -b -P {scene_script} -- -i {cfg_path}",
+        log_file,
+    )
+
+    # Ensure the main .blend file was produced; bail early with clear message
+    if not blend_out.exists():
+        msg = (
+            f"Expected blend file not found after initial Blender run: {blend_out}\n"
+            f"is360={data.is360}, cfg={cfg_path}"
+        )
+        logger.error(msg)
+        raise RuntimeError(msg)
 
     if data.mirror_in_scene:
-        _run(f"{blend_out} -b -P {mirror_script}")
+        _run(f"{blend_out} -b -P {mirror_script}", log_file)
 
     if data.rendering_preset and data.rendering_preset.is_extension:
         ext = await _dl_extension(root / TEMP_SCENE_DIR,
                                   data.rendering_preset.script_download_url)
         if ext:
-            _run(f"{blend_out} -b -P {ext}")
+            _run(f"{blend_out} -b -P {ext}", log_file)
 
     has_object_mirrors = any(o.is_mirror for o in data.scene_objects)
     if has_object_mirrors and not data.mirror_in_scene and not data.is360:
-        _run(f"{blend_out} -b -P {user_mirror_script}")
+        _run(f"{blend_out} -b -P {user_mirror_script}", log_file)
 
     logger.info(f"Finished build_scene for render_job_id=%s, blend_out=%s", render_job_id, blend_out)
     return blend_out
@@ -172,7 +198,10 @@ def _write_blender_cfg(cfg_dir: Path, blend_out: Path,
             "IsCurtain": o.is_curtain, "IsFloor": o.is_floor, "ShowLights": o.show_lights,
             "LightsColor": o.lights_color, "LightsPower": o.lights_power,
             "LightRadius": o.light_radius,
-            "LightSourcesPositions": [v.model_dump(mode="python") for v in (o.light_sources_positions or [])],
+            "LightSourcesPositions": [
+                {"X": v.x, "Y": v.y, "Z": v.z}
+                for v in (o.light_sources_positions or [])
+            ],
             "IsMirror": o.is_mirror
         })
 
@@ -199,11 +228,36 @@ def _write_blender_cfg(cfg_dir: Path, blend_out: Path,
     cfg_path.write_text(json.dumps(cfg))
     return cfg_path
 
-def _run(cmd: str):
-    full = [settings.blender_exe_location] + cmd.split()
-    logger.info("▶  %s", " ".join(full))
-    proc = subprocess.run(full, capture_output=True, text=True)
-    logger.info(proc.stdout)
-    if proc.returncode:
-        logger.error(proc.stderr)
-        raise RuntimeError(f"Blender exited {proc.returncode}")
+def _run(cmd: str, log_file: Path | None = None):
+    """Run Blender command, stream stdout/stderr to logger in real-time."""
+    args = [settings.blender_exe_location] + shlex.split(cmd)
+    logger.info("▶  %s", " ".join(args))
+
+    proc = subprocess.Popen(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        universal_newlines=True,
+    )
+
+    output_accum = []
+
+    # Stream output line-by-line so we see progress as it happens
+    for line in proc.stdout:
+        logger.info(line.rstrip())
+        output_accum.append(line)
+        if log_file:
+            with log_file.open("a") as lf:
+                lf.write(line)
+
+    proc.wait()
+
+    if proc.returncode != 0:
+        err_msg = f"Blender exited {proc.returncode}"
+        logger.error(err_msg)
+        if log_file and not log_file.exists():
+            # write captured output in case nothing streamed yet
+            log_file.write_text("".join(output_accum))
+        raise RuntimeError(err_msg + "\nLog file: " + (str(log_file) if log_file else "<none>") )
