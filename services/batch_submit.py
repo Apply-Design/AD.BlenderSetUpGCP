@@ -40,7 +40,7 @@ blender -b scene.blend -E CYCLES -f 1
 # 3) copy outputs back to out bucket
 OUT_DIR=/mnt/stateful_partition/out/renders/{render_job_id}
 mkdir -p "$OUT_DIR"
-cp Furniture_* Light_* Shadow_* scene.blend "$OUT_DIR/"
+cp *.png "$OUT_DIR/"
 
 # 4) webhook (required)
 apt-get -qq update && apt-get -y install --no-install-recommends curl >/dev/null
