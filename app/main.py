@@ -27,10 +27,15 @@ async def render(data: PostData):
         uri = await _upload(local_blend, render_job_id)
 
         # fire-and-forget submit
-        submit(render_job_id, uri, data.webhook)
+        batch_job_name = submit(render_job_id, uri, data.webhook)
 
         logger.info(f"Successfully submitted render job for render_job_id=%s", render_job_id)
-        return {"render_job_id": render_job_id, "blend": uri, "status": "submitted"}
+        return {
+            "render_job_id": render_job_id,
+            "blend": uri,
+            "batch_job": batch_job_name,
+            "status": "submitted",
+        }
         
     except Exception as e:
         logger.error(f"Error processing render job for render_job_id=%s: %s", render_job_id, e)

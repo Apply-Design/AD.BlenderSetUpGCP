@@ -6,7 +6,7 @@ import logging
 
 logger = logging.getLogger("batch_submit")
 
-def submit(render_job_id: str, blend_uri: str, webhook: str | None):
+def submit(render_job_id: str, blend_uri: str, webhook: str | None) -> str:
     """
     Launch a render job that reads the .blend we uploaded to
     gs://<bucket>/renders/<render_job_id>/<render_job_id>.blend
@@ -101,5 +101,9 @@ curl -X POST -d '{{"workflow_id": "{render_job_id}"}}' -H "Content-Type: applica
     )
 
     logger.info(f"Batch job object created for render_job_id=%s, job_id=%s", render_job_id, job_id)
-    client.create_job(parent=parent, job=job, job_id=job_id)
-    logger.info(f"Batch job submitted for render_job_id=%s, job_id=%s", render_job_id, job_id)
+    created = client.create_job(parent=parent, job=job, job_id=job_id)
+    job_name = created.name  # projects/{project}/locations/{region}/jobs/{job_id}
+    logger.info(
+        "Batch job submitted for render_job_id=%s, job_name=%s", render_job_id, job_name
+    )
+    return job_name
